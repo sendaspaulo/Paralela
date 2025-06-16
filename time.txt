@@ -1,0 +1,10 @@
+SEQUENCIAL
+real    0m16.260s
+user    0m16.365s
+sys     0m0.237s
+
+
+PARALELO OPENMP
+real    0m4.394s
+user    0m35.514s
+sys     0m0.275s
