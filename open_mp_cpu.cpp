@@ -4,14 +4,14 @@
 using namespace std;
 
 // ─────────── CONFIGURAÇÃO ───────────
-// Defina aqui o CSV, o valor default de K, max de iterações e se há header
+// Defina aqui o CSV, o valor default de K, max de iterações, se há header e o número de threads
 #define DATA_FILE       "covtype.csv"
 #define DEFAULT_K       10
 #define DEFAULT_MAX_IT  150
 #define SKIP_HEADER     true
+#define NUM_THREADS     32   // <-- ajuste aqui o número de threads
 // ─────────────────────────────────────
 
-// Lê CSV numérico, opcionalmente pula header e remove a última coluna (rótulo)
 vector<vector<double>> load_csv(const string& filename) {
     ifstream in(filename);
     if (!in) {
@@ -28,8 +28,7 @@ vector<vector<double>> load_csv(const string& filename) {
     }
 #endif
     while (getline(in, line)) {
-        // limpa CR/LF e vírgula final
-        while (!line.empty() && (line.back()=='\r' || line.back()=='\n' || line.back()==','))
+        while (!line.empty() && (line.back()=='\r' || line.back()=='\n' || line.back()==',')) 
             line.pop_back();
         if (line.empty()) continue;
 
@@ -37,21 +36,24 @@ vector<vector<double>> load_csv(const string& filename) {
         vector<double> row;
         string cell;
         while (getline(ss, cell, ',')) {
-            cell.erase(cell.begin(), find_if(cell.begin(), cell.end(), [](unsigned char c){ return !isspace(c); }));
-            cell.erase(find_if(cell.rbegin(), cell.rend(), [](unsigned char c){ return !isspace(c); }).base(), cell.end());
+            cell.erase(cell.begin(),
+                       find_if(cell.begin(), cell.end(),
+                               [](unsigned char c){ return !isspace(c); }));
+            cell.erase(find_if(cell.rbegin(), cell.rend(),
+                               [](unsigned char c){ return !isspace(c); }).base(),
+                       cell.end());
             try {
                 row.push_back(stod(cell));
             } catch (invalid_argument&) {
                 // ignora token não numérico
             }
         }
-        if (!row.empty()) row.pop_back();
+        if (!row.empty()) row.pop_back();  // remove coluna de label
         if (!row.empty()) data.emplace_back(move(row));
     }
     return data;
 }
 
-// Distância Euclidiana
 double euclid(const vector<double>& a, const vector<double>& b) {
     double sum = 0;
     for (size_t i = 0; i < a.size(); i++) {
@@ -62,6 +64,11 @@ double euclid(const vector<double>& a, const vector<double>& b) {
 }
 
 int main(int argc, char* argv[]) {
+    // configura o número de threads OpenMP
+    omp_set_num_threads(NUM_THREADS);
+    // imprime quantas threads serão usadas
+    cout << "Número de threads: " << omp_get_max_threads() << "\n";
+
     // argumentos: [K] [max_iter] [arquivo]
     int K        = (argc >= 2 ? stoi(argv[1]) : DEFAULT_K);
     int max_iter = (argc >= 3 ? stoi(argv[2]) : DEFAULT_MAX_IT);
@@ -146,7 +153,7 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    // saída
+    // saída final
     cout << fixed << setprecision(4);
     for (int k = 0; k < K; k++) {
         cout << "Centróide " << k << ": ";
