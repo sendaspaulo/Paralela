@@ -36,3 +36,8 @@ user    0m30.661s
 sys     0m0.408s
 
 
+CUDA 
+real    0m4.990s
+user    0m4.361s
+sys     0m0.328s
+
